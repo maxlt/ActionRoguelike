@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SCharacter.h"
+
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "DrawDebugHelpers.h"
@@ -45,25 +46,46 @@ void ASCharacter::MoveRight(float Value)
 	AddMovementInput(FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y), Value);
 }
 
+void ASCharacter::PrimaryAttack()
+{
+	const FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	FTransform SpawnTM{
+		GetControlRotation(), // We spawn the magic projectile at the camera/view's direction
+		HandLocation
+	};
+
+	FActorSpawnParameters SpawnParams{};
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+}
+
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector LineStart = GetActorLocation();
-	// Offset to the right of the pawn
-	LineStart += GetActorRightVector() * 100.f;
-	FVector ActorDir_LineEnd = LineStart + GetActorForwardVector() * 100.f;
-	DrawDebugDirectionalArrow(GetWorld(), LineStart, ActorDir_LineEnd, 100.f, FColor::Yellow, false, 0.f, 0u, 5.f);
+	{
+		FVector LineStart = GetActorLocation();
+		LineStart += GetActorRightVector() * 100.f; // Offset to the right of the pawn
 
-	FVector ControllerDir_LineEnd = LineStart + GetControlRotation().Vector() * 100.f;
-	DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Green, false, 0.f, 0u, 5.f);
+		FVector ActorDir_LineEnd = LineStart + GetActorForwardVector() * 100.f;
+		DrawDebugDirectionalArrow(GetWorld(), LineStart, ActorDir_LineEnd, 100.f, FColor::Yellow, false, 0.f, 0u, 5.f);
 
-	LineStart = GetActorLocation();
-	LineStart += GetActorRightVector() * -100.f;
+		FVector ControllerDir_LineEnd = LineStart + GetControlRotation().Vector() * 100.f;
+		DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Green, false, 0.f, 0u, 5.f);
+	}
 
-	DrawDebugCamera(GetWorld(), LineStart, CameraComp->GetComponentRotation(), CameraComp->FieldOfView, 50.f, FColor::Blue, false, 0.f, 0u);
-	DrawDebugLine(GetWorld(), LineStart, LineStart + SpringArmComp->GetComponentRotation().Vector() * 100.f, FColor::Red, false, 0.f, 0u, 1.f);
+	{
+		FVector LineStart = GetActorLocation();
+		LineStart += GetActorRightVector() * -100.f;
+
+		DrawDebugCamera(GetWorld(), LineStart, CameraComp->GetComponentRotation(), CameraComp->FieldOfView, 50.f, FColor::Blue, false, 0.f, 0u);
+
+		const FVector SpringArmLineStart = SpringArmComp->GetComponentLocation();
+
+		DrawDebugLine(GetWorld(), SpringArmLineStart, SpringArmLineStart + SpringArmComp->GetComponentRotation().Vector() * 100.f, FColor::Red, false, 0.f, 0u, 1.f);
+	}
 }
 
 // Called to bind functionality to input
@@ -75,5 +97,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
+	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 }
 
