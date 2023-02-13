@@ -21,6 +21,8 @@ ASMagicProjectile::ASMagicProjectile()
 	MovementComp->InitialSpeed = 1000.f;
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->bInitialVelocityInLocalSpace = true;
+
+	SphereComp->SetCollisionProfileName("Projectile");
 }
 
 // Called when the game starts or when spawned
