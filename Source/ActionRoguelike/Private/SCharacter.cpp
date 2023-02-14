@@ -45,6 +45,28 @@ void ASCharacter::MoveRight(float Value)
 	AddMovementInput(UKismetMathLibrary::GetRightVector(ControlRot), Value);
 }
 
+void ASCharacter::PrimaryAttack()
+{
+	FVector HandSocketLocation{};
+
+	if (GetMesh())
+	{
+		HandSocketLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	}
+
+	const FTransform SpawnTrMatx
+	{
+		GetControlRotation(),
+		HandSocketLocation
+	};
+
+	FActorSpawnParameters SpawnParams{};
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// Spawn a magic projectile
+	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTrMatx, SpawnParams);
+}
+
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
 {
@@ -69,5 +91,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
+	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
 }
 
