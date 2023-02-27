@@ -19,6 +19,7 @@ ASItemChest::ASItemChest()
 
 void ASItemChest::Interact_Implementation(APawn* InstigatorPawn)
 {
+	UE_LOG(LogTemp, Log, TEXT("Interact called on an SItemChest object"));
 	LidMesh->SetRelativeRotation(FRotator{PitchTarget, 0, 0});
 }
 

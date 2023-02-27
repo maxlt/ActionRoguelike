@@ -14,7 +14,7 @@ class USGameplayInterface : public UInterface
 };
 
 /**
- * 
+ * Any object that implements this interface has the ability to be interacted by a pawn.
  */
 class ACTIONROGUELIKE_API ISGameplayInterface
 {
@@ -22,6 +22,7 @@ class ACTIONROGUELIKE_API ISGameplayInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	// Call this function on the object that is being interacted with e.g. chest item.
 	UFUNCTION(BlueprintNativeEvent)
 	void Interact(APawn* Instigator);
 };
