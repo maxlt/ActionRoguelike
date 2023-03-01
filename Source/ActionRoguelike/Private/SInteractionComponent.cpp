@@ -36,7 +36,7 @@ void USInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 void USInteractionComponent::PrimaryInteract()
 {
 	// We want to do a line trace starting from the controller's "eye" and query whatever object collided with the line.
-	FHitResult Hit;
+	//FHitResult Hit;
 	FCollisionObjectQueryParams ObjTypeParams;
 	ObjTypeParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 	
@@ -47,19 +47,35 @@ void USInteractionComponent::PrimaryInteract()
 	PawnOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
 	FVector End = EyeLocation + (EyeRotation.Vector() * 10'000);
-	const bool bIsHit = GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjTypeParams);
+	//const bool bIsHit = GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjTypeParams);
+
+	const float SweepRadius = 30.f;
+
+	FCollisionShape SweepingShape;
+	SweepingShape.SetSphere(SweepRadius);
+
+	TArray<FHitResult> HitResults;
+	const bool bIsHit = GetWorld()->SweepMultiByObjectType(HitResults, EyeLocation, End, FQuat::Identity, ObjTypeParams, SweepingShape);
 
 	const FColor LineColor = bIsHit ? FColor::Green : FColor::Red;
+
+	for (const FHitResult Hit : HitResults)
+	{
+		// Once we've queried the object, we test whether it implements the SGameplayInterface, and if it does, we call
+		// the Interact on it.
+		if (AActor* HitActor = Hit.GetActor())
+		{
+			if (HitActor->Implements<USGameplayInterface>())
+			{
+				ISGameplayInterface::Execute_Interact(HitActor, GetOwner<APawn>());
+			}
+		}
+
+		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, SweepRadius, 32, LineColor, false, 2.f);
+		break;
+	}
+
 	DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0u, 2.0f);
 
-	// Once we've queried the object, we test whether it implements the SGameplayInterface, and if it does, we call
-	// the Interact on it.
-	if (AActor* HitActor = Hit.GetActor())
-	{
-		if (HitActor->Implements<USGameplayInterface>())
-		{
-			ISGameplayInterface::Execute_Interact(HitActor, GetOwner<APawn>());
-		}
-	}
 }
 
