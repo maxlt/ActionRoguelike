@@ -51,8 +51,17 @@ void ASCharacter::MoveRight(float Value)
 
 void ASCharacter::PrimaryAttack()
 {
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
+
+	PlayAnimMontage(AttackAnim);
+
+	//GetWorldTimerManager()->ClearTimer(TimerHandle_PrimaryAttack);
+}
+
+void ASCharacter::PrimaryAttack_TimeElapsed()
+{
 	const FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
-	FTransform SpawnTM{
+	const FTransform SpawnTM {
 		GetControlRotation(), // We spawn the magic projectile at the camera/view's direction
 		HandLocation
 	};
