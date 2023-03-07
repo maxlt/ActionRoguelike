@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "SInteractionComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -60,9 +61,26 @@ void ASCharacter::PrimaryAttack()
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
+	const FVector CamLocation = GetController<APlayerController>()->PlayerCameraManager->GetCameraLocation();
+	const FVector CamForwardDir = GetController<APlayerController>()->PlayerCameraManager->GetCameraRotation().Vector();
+	constexpr float MaxDistance = 5000.f;
+	FCollisionObjectQueryParams Params;
+	Params.AddObjectTypesToQuery(ECC_WorldDynamic);
+	Params.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	FVector EndLocation = CamLocation + MaxDistance * CamForwardDir;
+
+	FHitResult Hit;
+	GetWorld()->LineTraceSingleByObjectType(Hit, CamLocation, EndLocation, Params);
+	if (Hit.bBlockingHit)
+	{
+		EndLocation = Hit.ImpactPoint;
+	}
+
 	const FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
+	const FRotator ProjectileSpawnRot = UKismetMathLibrary::FindLookAtRotation(HandLocation, EndLocation);
 	const FTransform SpawnTM {
-		GetControlRotation(), // We spawn the magic projectile at the camera/view's direction
+		ProjectileSpawnRot,
 		HandLocation
 	};
 
