@@ -61,6 +61,11 @@ void ASCharacter::PrimaryAttack()
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
 {
+	if (!ensure(ProjectileClass))
+	{
+		return;
+	}
+
 	const FVector CamLocation = GetController<APlayerController>()->PlayerCameraManager->GetCameraLocation();
 	const FRotator CamRotation = GetController<APlayerController>()->PlayerCameraManager->GetCameraRotation();
 	constexpr float MaxDistance = 10'000.f;
