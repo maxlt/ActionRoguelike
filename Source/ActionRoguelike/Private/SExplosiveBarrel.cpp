@@ -3,6 +3,7 @@
 #include "SExplosiveBarrel.h"
 #include "Components/StaticMeshComponent.h"
 #include "PhysicsEngine/RadialForceComponent.h"
+#include "SAttributeComponent.h"
 
 // Sets default values
 ASExplosiveBarrel::ASExplosiveBarrel()
@@ -17,6 +18,7 @@ ASExplosiveBarrel::ASExplosiveBarrel()
 	ExplosiveForceComp->SetupAttachment(BarrelMeshComp);
 
 	BarrelMeshComp->SetSimulatePhysics(true);
+	BarrelMeshComp->CanCharacterStepUpOn = ECB_No;
 
 	ExplosiveForceComp->AddCollisionChannelToAffect(ECC_WorldDynamic);
 	ExplosiveForceComp->SetAutoActivate(false);
@@ -48,6 +50,14 @@ void ASExplosiveBarrel::PostInitializeComponents()
 
 void ASExplosiveBarrel::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (OtherActor)
+	{
+		if (USAttributeComponent* OtherAttribute = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass())))
+		{
+			OtherAttribute->ApplyHealthChange(-50);
+		}
+	}
+
 	ExplosiveForceComp->FireImpulse();
 
 	UE_LOG(LogTemp, Log, TEXT("OnActorHit called on ASExplosiveBarrel"));
