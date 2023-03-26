@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "SProjectileBased.h"
+
 #include "SCharacter.generated.h"
 
 class USpringArmComponent;
@@ -19,7 +21,7 @@ class ACTIONROGUELIKE_API ASCharacter : public ACharacter
 
 protected:
 	UPROPERTY(EditAnywhere, Category="Attack")
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<ASProjectileBased> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
