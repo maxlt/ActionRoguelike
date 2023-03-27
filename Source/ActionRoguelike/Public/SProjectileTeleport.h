@@ -28,19 +28,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Projectile Ability")
 	float TimeUntilTeleport;
 
-	FTimerHandle ExplodeTimer;
-	FTimerHandle TeleportTimer;
+	FTimerHandle DetonateDelayTimer;
 
-	void Explode();
-	
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnExploded();
+	virtual void Dissipate_Implementation() override;
 	
 	void Teleport();
-	
-	UFUNCTION()
-	void OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-private:
-	FVector TeleportDestination;
 };

@@ -3,10 +3,11 @@
 #include "SProjectileTeleport.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 ASProjectileTeleport::ASProjectileTeleport()
 {
-	TeleportDestination = FVector::ZeroVector;
 	TimeUntilExplode = 0.2f;
 	TimeUntilTeleport = 0.2f;
 
@@ -17,40 +18,40 @@ void ASProjectileTeleport::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorldTimerManager().SetTimer(ExplodeTimer, this, &ASProjectileTeleport::Explode, TimeUntilExplode);
+	GetWorldTimerManager().SetTimer(DetonateDelayTimer, this, &ASProjectileTeleport::Dissipate, TimeUntilExplode);
 }
 
 void ASProjectileTeleport::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	SphereComp->OnComponentHit.AddDynamic(this, &ASProjectileTeleport::OnProjectileHit);
+	//SphereComp->OnComponentHit.AddDynamic(this, &ASProjectileTeleport::OnProjectileHit);
 }
 
-void ASProjectileTeleport::Explode()
+void ASProjectileTeleport::Dissipate_Implementation()
 {
 	UE_LOG(LogTemp, Log, TEXT("Explode"));
 
-	TeleportDestination = GetActorLocation();
-	OnExploded();
+	GetWorldTimerManager().ClearTimer(DetonateDelayTimer);
 
-	GetWorldTimerManager().SetTimer(TeleportTimer, this, &ASProjectileTeleport::Teleport, TimeUntilTeleport);
+	UGameplayStatics::SpawnEmitterAtLocation(this, HitFx, GetActorLocation(), GetActorRotation());
+	FxComp->DeactivateSystem();
 	MovementComp->StopMovementImmediately();
+	SetActorEnableCollision(false);
+
+	FTimerHandle TeleportDelayTimer;
+	GetWorldTimerManager().SetTimer(TeleportDelayTimer, this, &ASProjectileTeleport::Teleport, TimeUntilTeleport);
 }
 
 void ASProjectileTeleport::Teleport()
 {
 	APawn* InstigatorPawn = GetInstigator<APawn>();
-	ensureAlways(InstigatorPawn);
+	if (ensureAlways(InstigatorPawn))
+	{
+		FVector Destination = GetActorLocation();
+		UE_LOG(LogTemp, Log, TEXT("Teleport at %s"), *Destination.ToString());
 
-	UE_LOG(LogTemp, Log, TEXT("Teleport at %s"), *TeleportDestination.ToString());
+		InstigatorPawn->TeleportTo(Destination, InstigatorPawn->GetActorRotation());
 
-	ensureAlways(!TeleportDestination.IsZero());
-	InstigatorPawn->TeleportTo(TeleportDestination, InstigatorPawn->GetActorRotation());
-	Destroy();
-}
-
-void ASProjectileTeleport::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	GetWorldTimerManager().ClearTimer(ExplodeTimer);
-	Explode();
+		Destroy();
+	}
 }

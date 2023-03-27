@@ -4,6 +4,7 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ASProjectileBased::ASProjectileBased()
@@ -26,15 +27,32 @@ ASProjectileBased::ASProjectileBased()
 	SphereComp->SetCollisionProfileName("Projectile");
 }
 
-void ASProjectileBased::_OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ASProjectileBased::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// Default implementation is call the Blueprint re-implementation.
-	OnProjectileOverlapped(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	// Default implementation is do nothing; let derived classes decide it.
+}
+
+void ASProjectileBased::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	Dissipate();
+}
+
+void ASProjectileBased::Dissipate_Implementation()
+{
+	if (ensure(IsValid(this)))
+	{
+		MovementComp->StopMovementImmediately();
+		FxComp->DeactivateSystem();
+		UGameplayStatics::SpawnEmitterAtLocation(this, HitFx, GetActorLocation(), GetActorRotation());
+		SetActorEnableCollision(false);
+		Destroy();
+	}
 }
 
 void ASProjectileBased::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &ASProjectileBased::_OnActorOverlap);
+	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &ASProjectileBased::OnProjectileOverlap);
+	SphereComp->OnComponentHit.AddDynamic(this, &ASProjectileBased::OnProjectileHit);
 }

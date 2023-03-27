@@ -26,6 +26,8 @@ ASCharacter::ASCharacter()
 
 	AttrComp = CreateDefaultSubobject<USAttributeComponent>("Attribute Component");
 
+	AttackTimeDelay = 0.2f;
+
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
@@ -55,14 +57,39 @@ void ASCharacter::MoveRight(float Value)
 
 void ASCharacter::PrimaryAttack()
 {
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &ASCharacter::PrimaryAttack_TimeElapsed, 0.2f);
-
 	PlayAnimMontage(AttackAnim);
-
+	GetWorldTimerManager().SetTimer(TimerHandle_AttackDelay, this, &ASCharacter::PrimaryAttack_TimeElapsed, AttackTimeDelay);
 	//GetWorldTimerManager()->ClearTimer(TimerHandle_PrimaryAttack);
 }
 
 void ASCharacter::PrimaryAttack_TimeElapsed()
+{
+	SpawnProjectile(MagicProjectileClass);
+}
+
+void ASCharacter::FireBlackHole()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_AttackDelay, this, &ASCharacter::FireBlackHole_TimeElapsed, AttackTimeDelay);
+}
+
+void ASCharacter::FireBlackHole_TimeElapsed()
+{
+	SpawnProjectile(BlackHoleProjectileClass);
+}
+
+void ASCharacter::Teleport()
+{
+	PlayAnimMontage(AttackAnim);
+	GetWorldTimerManager().SetTimer(TimerHandle_AttackDelay, this, &ASCharacter::Teleport_TimeElapsed, AttackTimeDelay);
+}
+
+void ASCharacter::Teleport_TimeElapsed()
+{
+	SpawnProjectile(TeleportProjectileClass);
+}
+
+void ASCharacter::SpawnProjectile(TSubclassOf<ASProjectileBased> ProjectileClass)
 {
 	if (!ensure(ProjectileClass))
 	{
@@ -70,18 +97,23 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 	}
 
 	const FVector CamLocation = GetController<APlayerController>()->PlayerCameraManager->GetCameraLocation();
-	const FRotator CamRotation = GetController<APlayerController>()->PlayerCameraManager->GetCameraRotation();
+	const FRotator CamRotation = GetController<APlayerController>()->PlayerCameraManager->GetCameraRotation(); // Deprecated
+	const FRotator PawnRotation = GetControlRotation();
 	constexpr float MaxDistance = 10'000.f;
+	FVector EndLocation = CamLocation + MaxDistance * PawnRotation.Vector();
 
-	FCollisionObjectQueryParams CollisionParams;
-	CollisionParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-	CollisionParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	FCollisionObjectQueryParams CollidedObjectParams;
+	CollidedObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	CollidedObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	CollidedObjectParams.AddObjectTypesToQuery(ECC_Pawn);
 
-	FVector EndLocation = CamLocation + MaxDistance * CamRotation.Vector();
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+
+	FCollisionShape CollisionSphere = FCollisionShape::MakeSphere(20.f);
 
 	FHitResult Hit;
-	GetWorld()->LineTraceSingleByObjectType(Hit, CamLocation, EndLocation, CollisionParams);
-
+	GetWorld()->SweepSingleByObjectType(Hit, CamLocation, EndLocation, FQuat::Identity, CollidedObjectParams, CollisionSphere, CollisionParams);
 	if (Hit.bBlockingHit)
 	{
 		EndLocation = Hit.ImpactPoint;
@@ -89,10 +121,7 @@ void ASCharacter::PrimaryAttack_TimeElapsed()
 
 	const FVector HandLocation = GetMesh()->GetSocketLocation("Muzzle_01");
 	const FRotator ProjectileSpawnRotation = UKismetMathLibrary::FindLookAtRotation(HandLocation, EndLocation);
-	const FTransform SpawnTM {
-		ProjectileSpawnRotation,
-		HandLocation
-	};
+	const FTransform SpawnTM{ ProjectileSpawnRotation, HandLocation };
 
 	FActorSpawnParameters SpawnParams{};
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -146,6 +175,9 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &ASCharacter::PrimaryAttack);
+	PlayerInputComponent->BindAction("SecondaryAttack", IE_Pressed, this, &ASCharacter::FireBlackHole);
+	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &ASCharacter::Teleport);
+
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &ASCharacter::PrimaryInteract);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASCharacter::Jump);
 }

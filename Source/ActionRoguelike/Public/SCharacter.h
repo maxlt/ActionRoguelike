@@ -21,12 +21,21 @@ class ACTIONROGUELIKE_API ASCharacter : public ACharacter
 
 protected:
 	UPROPERTY(EditAnywhere, Category="Attack")
-	TSubclassOf<ASProjectileBased> ProjectileClass;
+	TSubclassOf<ASProjectileBased> MagicProjectileClass;
 
-	UPROPERTY(EditAnywhere, Category = "Attack")
+	UPROPERTY(EditAnywhere, Category="Attack")
+	TSubclassOf<ASProjectileBased> BlackHoleProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category="Attack")
+	TSubclassOf<ASProjectileBased> TeleportProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category="Attack")
 	UAnimMontage* AttackAnim;
 
-	FTimerHandle TimerHandle_PrimaryAttack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attack")
+	float AttackTimeDelay;
+
+	FTimerHandle TimerHandle_AttackDelay;
 
 public:
 	// Sets default values for this character's properties
@@ -53,6 +62,14 @@ protected:
 
 	void PrimaryAttack();
 	void PrimaryAttack_TimeElapsed();
+
+	void FireBlackHole();
+	void FireBlackHole_TimeElapsed();
+
+	void Teleport();
+	void Teleport_TimeElapsed();
+
+	void SpawnProjectile(TSubclassOf<ASProjectileBased> ProjectileClass);
 
 	void PrimaryInteract();
 
