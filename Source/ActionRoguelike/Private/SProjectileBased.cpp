@@ -39,7 +39,7 @@ void ASProjectileBased::OnProjectileHit(UPrimitiveComponent* HitComponent, AActo
 
 void ASProjectileBased::Dissipate_Implementation()
 {
-	if (ensure(IsValid(this)))
+	if (ensure(IsValid(this))) // Is this Actor *not* in pending kill? (IsPendingKill has been deprecated.)
 	{
 		MovementComp->StopMovementImmediately();
 		FxComp->DeactivateSystem();
