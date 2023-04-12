@@ -17,7 +17,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Attributes")
 	float Health;
 
-	// TODO Attributes for max health, stamina, strength, etc.
+	// TODO Attributes for stamina, strength, etc.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Attributes")
+	float MaxHealth;
+
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnHealthChanged OnHealthChanged;
