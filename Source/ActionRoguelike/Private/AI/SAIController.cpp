@@ -10,10 +10,10 @@ void ASAIController::BeginPlay()
 
 	RunBehaviorTree(BehaviorTree);
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (ensure(PlayerPawn))
-	{
-		UBlackboardComponent* bb = GetBlackboardComponent();
-		bb->SetValueAsObject("TargetActor", PlayerPawn);
-	}
+	//APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	//if (ensure(PlayerPawn))
+	//{
+	//	UBlackboardComponent* bb = GetBlackboardComponent();
+	//	bb->SetValueAsObject("TargetActor", PlayerPawn);
+	//}
 }

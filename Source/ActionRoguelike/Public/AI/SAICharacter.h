@@ -11,15 +11,18 @@ class ACTIONROGUELIKE_API ASAICharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(VisibleAnywhere, Category="Components")
+	class UPawnSensingComponent* PawnSensor;
+
+protected:
+	virtual void PostInitializeComponents() override;
+
+	UFUNCTION()
+	void OnPawnSeen(APawn* Pawn);
+
 public:
 	// Sets default values for this character's properties
 	ASAICharacter();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 };
