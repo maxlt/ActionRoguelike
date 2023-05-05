@@ -175,6 +175,10 @@ void ASCharacter::Tick(float DeltaTime)
 
 		DrawDebugLine(GetWorld(), SpringArmLineStart, SpringArmLineStart + SpringArmComp->GetComponentRotation().Vector() * 100.f, FColor::Red, false, 0.f, 0u, 1.f);
 	}
+
+	bool IsCompActive = InteractComp->IsActive();
+	if (IsCompActive)
+		DrawDebugString(GetWorld(), FVector::ZeroVector, "Active...", this, FColor::Blue, 0.f, true);
 }
 
 // Called to bind functionality to input
