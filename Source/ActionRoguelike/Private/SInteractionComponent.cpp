@@ -3,6 +3,22 @@
 #include "SInteractionComponent.h"
 #include "SGameplayInterface.h"
 #include "DrawDebugHelpers.h"
+#include "GameFramework/PawnMovementComponent.h"
+
+// # Problem
+// I want to directly modify a Controller's control-rotation in a component's tick function, without using IgnoreLookInput, but the result gives me a janky control - rotation whenever I move the mouse.
+//
+// [Show a GIF of the problem.]
+//
+// # Solution
+// Using tick dependency may solve the problem.
+//
+// By default, an actor component is ticked during `TG_Physics`, but `APlayerController`'s tick group is `TG_PrePhysics`.
+//
+// 1. Set the component's tick group to be the same as `APlayerController`'s in the component's constructor.
+// 2. Call the component's `PrimaryComponentTick.AddPrerequisite` and pass to it the controller's `PrimaryActorTick`. The call can be done in the component's `BeginPlay`.
+//
+// This will ensure the component is ticked _after_ the controller's tick.
 
 // Sets default values for this component's properties
 USInteractionComponent::USInteractionComponent()
@@ -10,13 +26,15 @@ USInteractionComponent::USInteractionComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = false;
+	PrimaryComponentTick.bStartWithTickEnabled = true;
 	// bAutoActivate is disabled by default; you can either manually activate it later or force auto-activation now.
 	bAutoActivate = false;
 	// Note:
 	// By default, bAutoActivate is disabled and this component isn't active. Also, bCanEverTick is disabled by default.
 	// Activating this component will enable ticking i.e. call SetComponentTickEnabled with true argument, provided bCanEverTick is set.
 	// You can tick this component even while it's not active, i.e. Active Component => Ticking Component.
+	// By default, an actor component is ticked during TG_Physics.
+	PrimaryComponentTick.TickGroup = TG_PrePhysics; // (1)
 }
 
 
@@ -25,8 +43,14 @@ void USInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
+	// (2)
+	APawn* OwnerPawn = GetOwner<APawn>();
+	APlayerController* PC = OwnerPawn->GetController<APlayerController>();
+
+	//PrimaryComponentTick.AddPrerequisite(this, PC->PrimaryActorTick);
+	AddTickPrerequisiteActor(PC);
+	AddTickPrerequisiteActor(OwnerPawn);
+	//AddTickPrerequisiteComponent(OwnerPawn->GetMovementComponent());
 }
 
 
@@ -35,7 +59,26 @@ void USInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	DrawDebugString(GetWorld(), GetOwner()->GetActorLocation(), "Ticking...", nullptr, FColor::Red, 0.f, true);
-	// ...
+	
+	APawn* OwnerPawn = GetOwner<APawn>();
+	APlayerController* PC = OwnerPawn->GetController<APlayerController>();
+
+	FVector LineStart = OwnerPawn->GetActorLocation();
+	LineStart += OwnerPawn->GetActorRightVector() * 100.f; // Offset to the right of the pawn
+
+	FVector ControllerDir_LineEnd = LineStart + PC->GetControlRotation().Vector() * 100.f;
+	DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Green, false, 0.f, 0u, 5.f);
+
+	// (3)
+	//APawn* OwnerPawn = GetOwner<APawn>();
+	//APlayerController* PC = OwnerPawn->GetController<APlayerController>();
+	FRotator CurrentControlRotation = PC->GetControlRotation();
+	CurrentControlRotation.Yaw = 0.0;
+	PC->SetControlRotation(FRotator::ZeroRotator);
+	OwnerPawn->FaceRotation(CurrentControlRotation, DeltaTime);
+
+	ControllerDir_LineEnd = LineStart + PC->GetControlRotation().Vector() * 100.f;
+	DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Blue, false, 0.f, 0u, 5.f);
 }
 
 void USInteractionComponent::PrimaryInteract()
@@ -85,5 +128,7 @@ void USInteractionComponent::PrimaryInteract()
 	// Manually activate or enable ticking on this component.
 	//Activate();
 	//SetComponentTickEnabled(true);
+	APawn* OwnerPawn = GetOwner<APawn>();
+	OwnerPawn->bUseControllerRotationYaw = !(OwnerPawn->bUseControllerRotationYaw);
 }
 

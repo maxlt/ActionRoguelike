@@ -161,8 +161,8 @@ void ASCharacter::Tick(float DeltaTime)
 		FVector ActorDir_LineEnd = LineStart + GetActorForwardVector() * 100.f;
 		DrawDebugDirectionalArrow(GetWorld(), LineStart, ActorDir_LineEnd, 100.f, FColor::Yellow, false, 0.f, 0u, 5.f);
 
-		FVector ControllerDir_LineEnd = LineStart + GetControlRotation().Vector() * 100.f;
-		DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Green, false, 0.f, 0u, 5.f);
+		//FVector ControllerDir_LineEnd = LineStart + GetControlRotation().Vector() * 100.f;
+		//DrawDebugDirectionalArrow(GetWorld(), LineStart, ControllerDir_LineEnd, 100.f, FColor::Green, false, 0.f, 0u, 5.f);
 	}
 
 	{
