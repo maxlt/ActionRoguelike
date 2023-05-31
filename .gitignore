@@ -1,6 +1,9 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+# Rider for Unreal specific files/directories
+.idea/
+
 # Compiled Object files
 *.slo
 *.lo
