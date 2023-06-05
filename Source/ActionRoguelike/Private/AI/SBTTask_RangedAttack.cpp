@@ -18,15 +18,19 @@ EBTNodeResult::Type USBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& O
 
 		const FVector MuzzleLoc = AICharacter->GetMesh()->GetSocketLocation("Muzzle_01");
 
-		UBlackboardComponent* bb = OwnerComp.GetBlackboardComponent();
-		AActor* TargetActor = Cast<AActor>(bb->GetValueAsObject("TargetActor"));
-		const FVector AICharacterAimDir = TargetActor->GetActorLocation() - MuzzleLoc;
-		const FRotator AimRot = AICharacterAimDir.Rotation();
+		const UBlackboardComponent* bb = OwnerComp.GetBlackboardComponent();
+		const AActor* TargetActor = Cast<AActor>(bb->GetValueAsObject("TargetActor"));
+		if (!TargetActor) // This character may not have a target yet until it detects the target.
+		{
+			return EBTNodeResult::Failed;
+		}
+		const FVector AimDir = TargetActor->GetActorLocation() - MuzzleLoc;
+		const FRotator AimRot = AimDir.Rotation();
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		AActor* SpawnedProjectile = nullptr;
+		const AActor* SpawnedProjectile = nullptr;
 		if (ensure(ProjectileClass))
 		{
 			SpawnedProjectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, MuzzleLoc, AimRot, SpawnParams);
