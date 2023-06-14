@@ -8,6 +8,7 @@
 
 #include "SCharacter.generated.h"
 
+class UZCharacterMovementComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class USInteractionComponent;
@@ -39,7 +40,7 @@ protected:
 
 public:
 	// Sets default values for this character's properties
-	ASCharacter();
+	ASCharacter(const FObjectInitializer& ObjInitializer);
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -53,6 +54,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	USAttributeComponent* AttrComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Movement")
+	TObjectPtr<UZCharacterMovementComponent> CustomMovement;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

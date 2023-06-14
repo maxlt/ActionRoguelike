@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SCharacter.h"
+#include "ZCharacterMovementComponent.h"
 
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -11,8 +12,11 @@
 #include "SAttributeComponent.h"
 
 // Sets default values
-ASCharacter::ASCharacter()
+ASCharacter::ASCharacter(const FObjectInitializer& ObjInitializer)
+	: ACharacter(ObjInitializer.SetDefaultSubobjectClass<UZCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	CustomMovement = GetCharacterMovement<UZCharacterMovementComponent>();
+	
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>("Spring Arm Component");

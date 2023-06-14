@@ -17,6 +17,7 @@ USInteractionComponent::USInteractionComponent()
 	// By default, bAutoActivate is disabled and this component isn't active. Also, bCanEverTick is disabled by default.
 	// Activating this component will enable ticking i.e. call SetComponentTickEnabled with true argument, provided bCanEverTick is set.
 	// You can tick this component even while it's not active, i.e. Active Component => Ticking Component.
+	// PrimaryComponentTick.TickGroup = TG_PrePhysics;
 }
 
 
@@ -24,9 +25,6 @@ USInteractionComponent::USInteractionComponent()
 void USInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-	
 }
 
 
@@ -35,7 +33,6 @@ void USInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	DrawDebugString(GetWorld(), GetOwner()->GetActorLocation(), "Ticking...", nullptr, FColor::Red, 0.f, true);
-	// ...
 }
 
 void USInteractionComponent::PrimaryInteract()
