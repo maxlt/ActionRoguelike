@@ -10,7 +10,7 @@
 bool FSavedMove_ZCharacter::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const
 {
 	const FSavedMove_ZCharacter* NewSavedMove_ZCharacter = static_cast<FSavedMove_ZCharacter*>(NewMove.Get());
-	if (NewSavedMove_ZCharacter->Saved_bWantToSprint != Saved_bWantToSprint)
+	if (NewSavedMove_ZCharacter->Saved_bWantsToSprint != Saved_bWantsToSprint)
 	{
 		return false;
 	}
@@ -20,14 +20,14 @@ bool FSavedMove_ZCharacter::CanCombineWith(const FSavedMovePtr& NewMove, ACharac
 
 void FSavedMove_ZCharacter::Clear()
 {
-	Saved_bWantToSprint = 0;
+	Saved_bWantsToSprint = 0;
 	FSavedMove_Character::Clear();
 }
 
 uint8 FSavedMove_ZCharacter::GetCompressedFlags() const
 {
 	uint8 Result = FSavedMove_Character::GetCompressedFlags();
-	if (Saved_bWantToSprint)
+	if (Saved_bWantsToSprint)
 	{
 		Result |= FLAG_Custom_0;
 	}
@@ -37,17 +37,19 @@ uint8 FSavedMove_ZCharacter::GetCompressedFlags() const
 void FSavedMove_ZCharacter::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
 	FSavedMove_Character::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
-
-	const UZCharacterMovementComponent* CharacterMovement = Cast<UZCharacterMovementComponent>(Character->GetMovementComponent());
-	Saved_bWantToSprint = CharacterMovement->Safe_bWantToSprint;
+	
+	const UZCharacterMovementComponent* const CharacterMovement = Character->GetCharacterMovement<UZCharacterMovementComponent>();
+	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
+	Saved_bPrevWantsToCrouch = CharacterMovement->Safe_bPrevWantsToCrouch;
 }
 
 void FSavedMove_ZCharacter::PrepMoveFor(ACharacter* Character)
 {
 	FSavedMove_Character::PrepMoveFor(Character);
 	
-	UZCharacterMovementComponent* CharacterMovement = Cast<UZCharacterMovementComponent>(Character->GetMovementComponent());
-	CharacterMovement->Safe_bWantToSprint = Saved_bWantToSprint;
+	UZCharacterMovementComponent* const CharacterMovement = Character->GetCharacterMovement<UZCharacterMovementComponent>();
+	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
+	CharacterMovement->Safe_bPrevWantsToCrouch = Saved_bPrevWantsToCrouch;
 }
 
 #pragma endregion
@@ -74,6 +76,11 @@ namespace
 	{
 		return V.SquaredLength() < FMath::Square(M);
 	}
+	
+	FORCEINLINE bool operator>(const FVector& V, float M)
+	{
+		return V.SquaredLength() > FMath::Square(M);
+	}
 }
 
 // Sets default values for this component's properties
@@ -94,15 +101,60 @@ void UZCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const F
 
 	if (MovementMode == MOVE_Walking)
 	{
-		MaxWalkSpeed = Safe_bWantToSprint ? Sprint_MaxWalkSpeed : Walk_MaxWalkSpeed;
+		MaxWalkSpeed = Safe_bWantsToSprint ? Sprint_MaxWalkSpeed : Walk_MaxWalkSpeed;
 	}
+
+	Safe_bPrevWantsToCrouch = bWantsToCrouch;
+}
+
+void UZCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+{
+	if (MovementMode == MOVE_Walking && !bWantsToCrouch && Safe_bPrevWantsToCrouch)
+	{
+		FHitResult PotentialSlideSurface;
+		if (Velocity > Slide_MinSpeed && GetSlideSurface(PotentialSlideSurface))
+		{
+			EnterSlide();
+		}
+	}
+
+	if (IsCustomMovementMode(ECustomMovementMode::CMOVE_Slide) && !bWantsToCrouch)
+	{
+		ExitSlide();
+	}
+	
+	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+}
+
+void UZCharacterMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
+{
+	Super::PhysCustom(DeltaTime, Iterations);
+
+	switch (CustomMovementMode)
+	{
+	case CMOVE_Slide:
+		PhysSlide(DeltaTime, Iterations);
+		break;
+	default:
+		UE_LOG(LogTemp, Fatal, TEXT("Invalid Movement Mode"))
+	}
+}
+
+bool UZCharacterMovementComponent::IsMovingOnGround() const
+{
+	return Super::IsMovingOnGround() || IsCustomMovementMode(CMOVE_Slide);
+}
+
+bool UZCharacterMovementComponent::CanCrouchInCurrentState() const
+{
+	return Super::CanCrouchInCurrentState() && IsMovingOnGround();
 }
 
 void UZCharacterMovementComponent::EnterSlide()
 {
 	bWantsToCrouch = true;
 	Velocity += Velocity.GetSafeNormal2D() * Slide_EnterImpulse;
-	SetMovementMode(MOVE_Custom, static_cast<uint8>(ECustomMovementMode::CMOVE_Slide));
+	SetMovementMode(MOVE_Custom, CMOVE_Slide);
 }
 
 void UZCharacterMovementComponent::ExitSlide()
@@ -228,22 +280,22 @@ void UZCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
-	Safe_bWantToSprint = ((Flags & FSavedMove_Character::FLAG_Custom_0) != 0);
+	Safe_bWantsToSprint = ((Flags & FSavedMove_Character::FLAG_Custom_0) != 0);
 }
 
 void UZCharacterMovementComponent::SprintPressed()
 {
-	Safe_bWantToSprint = true;
+	Safe_bWantsToSprint = true;
 }
 
 void UZCharacterMovementComponent::SprintReleased()
 {
-	Safe_bWantToSprint = false;
+	Safe_bWantsToSprint = false;
 }
 
 bool UZCharacterMovementComponent::IsCustomMovementMode(ECustomMovementMode QueryMovementMode) const
 {
-	return (MovementMode == MOVE_Custom) && (CustomMovementMode == static_cast<uint8>(QueryMovementMode));
+	return (MovementMode == MOVE_Custom) && (CustomMovementMode == QueryMovementMode);
 }
 
 #pragma endregion

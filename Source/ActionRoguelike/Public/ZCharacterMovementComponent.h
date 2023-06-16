@@ -7,7 +7,7 @@
 #include "ZCharacterMovementComponent.generated.h"
 
 UENUM(BlueprintType)
-enum class ECustomMovementMode : uint8
+enum ECustomMovementMode
 {
 	CMOVE_None	UMETA(Hidden),
 	CMOVE_Slide UMETA(DisplayName="Slide"),
@@ -17,7 +17,8 @@ enum class ECustomMovementMode : uint8
 class ACTIONROGUELIKE_API FSavedMove_ZCharacter : public FSavedMove_Character
 {
 public:
-	uint32 Saved_bWantToSprint:1;
+	uint32 Saved_bWantsToSprint:1;
+	uint32 Saved_bPrevWantsToCrouch:1;
 
 	// Minimal API to override
 	
@@ -50,7 +51,8 @@ class ACTIONROGUELIKE_API UZCharacterMovementComponent : public UCharacterMoveme
 
 	friend class FSavedMove_ZCharacter;
 
-	bool Safe_bWantToSprint;
+	bool Safe_bWantsToSprint;
+	bool Safe_bPrevWantsToCrouch;
 
 protected:
 #pragma region Sprint
@@ -80,6 +82,8 @@ public:
 	
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+	virtual bool IsMovingOnGround() const override;
+	virtual bool CanCrouchInCurrentState() const override;
 
 	// Sprint movement
 	UFUNCTION(BlueprintCallable)
@@ -95,6 +99,9 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 
+	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual void PhysCustom(float DeltaTime, int32 Iterations) override; // Called by StartNewPhysics.
+	
 	// Slide interface
 	void EnterSlide();
 	void ExitSlide();
