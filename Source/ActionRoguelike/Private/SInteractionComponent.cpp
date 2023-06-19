@@ -73,17 +73,16 @@ void USInteractionComponent::PrimaryInteract()
 			if (HitActor->Implements<USGameplayInterface>())
 			{
 				ISGameplayInterface::Execute_Interact(HitActor, GetOwner<APawn>());
+				// break;
+				DrawDebugSphere(GetWorld(), Hit.Location, SweepRadius, 32, LineColor, false, 5.f);
+				DrawDebugPoint(GetWorld(), Hit.Location, 10.f, FColor::Blue, false, 5.0f, 0);
+				DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 10.f, FColor::Orange, false, 5.0f, 0);
+				break;
 			}
 		}
 
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, SweepRadius, 32, LineColor, false, 2.f);
-		break;
 	}
 
 	DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0u, 2.0f);
-
-	// Manually activate or enable ticking on this component.
-	//Activate();
-	//SetComponentTickEnabled(true);
 }
 
